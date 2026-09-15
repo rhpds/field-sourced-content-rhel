@@ -74,18 +74,16 @@ field_asset:
   enable_bastion_proxy: false
 ```
 
-## HTTPS through the bastion
+## Through the bastion
 
-Workload nodes are not given public Routes. SSH to a node is hop-through from the bastion (`ssh <name>`). HTTPS is the same idea: two reserved ports on the **bastion**, each with a public **HTTPS** URL and the cluster certificate.
+Workload nodes are not given public Routes. SSH to a node is hop-through from the bastion (`ssh <name>`). HTTP and HTTPS are the same idea: two reserved ports on the **bastion**.
 
-| Public URL (HTTPS) | Listen on the bastion |
+| Public URL | Listen on the bastion |
 |---|---|
-| `https://app-<guid>.<subdomain>` | **8080** |
-| `https://app2-<guid>.<subdomain>` | **8443** |
+| `http://app-<guid>.<subdomain>` | **8080** (HTTP) |
+| `https://app2-<guid>.<subdomain>` | **8443** (HTTPS; TLS stops at the Route, so listen HTTP on 8443) |
 
-TLS stops at the Route. Listen HTTP on those ports.
-
-When **Deploy Showroom?** is checked, Showroom occupies bastion **443** (`https://bastion-<guid>.<subdomain>`). Leave 443 alone. Port 80 is unused by this catalog.
+When **Deploy Showroom?** is checked, Showroom occupies bastion **443**. Leave 443 alone.
 
 **Install proxy on bastion?** runs `example_proxy` on `bastions`. It installs a proxy, writes a sample config that listens on 8080 and 8443 (and denies everything else), and starts the service. Edit that config to add your `cache_peer` lines. The checkbox only does something if your playbook includes the role; this template's `playbooks/deploy.yml` does.
 
