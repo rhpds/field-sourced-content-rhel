@@ -123,14 +123,13 @@ The example is four plays so you can see how targeting works:
     - example_httpd
 
 - name: Sample proxy on the bastion
-  hosts: bastions
+  hosts: "{{ groups['bastions'] if (field_asset.enable_bastion_proxy | default(false) | bool) else [] }}"
   become: true
   roles:
     - example_proxy
-  when: field_asset.enable_bastion_proxy | default(false) | bool
 ```
 
-`hosts: nodes` is every workload VM and never the bastion. `groups['nodes'][0]` is the first node (the catalog always creates at least one). The third play's `hosts:` is the second node, or `[]` when the order has only one — Ansible then skips that play. Same role, different `example_httpd_site_role`. Do not use `hosts: nodes[1]`; a missing subscript is an error, not a skip. The proxy play runs on `bastions` when the order-form checkbox is on.
+`hosts: nodes` is every workload VM and never the bastion. `groups['nodes'][0]` is the first node (the catalog always creates at least one). The third play's `hosts:` is the second node, or `[]` when the order has only one — Ansible then skips that play. Same role, different `example_httpd_site_role`. Do not use `hosts: nodes[1]`; a missing subscript is an error, not a skip. The proxy play uses the same empty-list skip when **Install proxy on bastion?** is off. `when:` is not valid on a Play.
 
 If you add `requirements.yml` at the collection root or under `playbooks/`, the runner installs it before the playbook.
 

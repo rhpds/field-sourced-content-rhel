@@ -13,8 +13,9 @@
 #     first node; the catalog always creates at least one
 #   hosts: "{{ groups['nodes'][1] if groups['nodes'] | length > 1 else [] }}"
 #     second node when the order has one; empty host list skips the play.
-#     Do not use hosts: nodes[1] — that subscript errors when the host
-#     is missing instead of skipping.
+#   hosts: "{{ groups['bastions'] if (field_asset.enable_bastion_proxy | default(false) | bool) else [] }}"
+#     bastion proxy play; empty host list skips it when the checkbox is off.
+#     Do not put when: on a Play — that is not a valid play keyword.
 
 - name: Baseline setup on every workload node
   hosts: nodes
@@ -39,8 +40,7 @@
     - example_httpd
 
 - name: Sample proxy on the bastion
-  hosts: bastions
+  hosts: "{{ groups['bastions'] if (field_asset.enable_bastion_proxy | default(false) | bool) else [] }}"
   become: true
   roles:
     - example_proxy
-  when: field_asset.enable_bastion_proxy | default(false) | bool
