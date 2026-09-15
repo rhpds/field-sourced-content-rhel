@@ -1,6 +1,11 @@
 ---
-name: rhel-field-content
+name: modules
 title: RHEL Field Content
 version: ~
 nav:
   - modules/ROOT/nav.adoc
+
+asciidoc:
+  attributes:
+    experimental: true
+    page-pagination: true

@@ -3,7 +3,7 @@ runtime:
 
 site:
   title: RHEL Field Sourced Content
-  start_page: rhel-field-content:ROOT:index.adoc
+  start_page: modules::index.adoc
 
 content:
   sources:
