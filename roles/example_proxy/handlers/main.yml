@@ -1,0 +1,5 @@
+---
+- name: Restart proxy
+  ansible.builtin.service:
+    name: "{{ example_proxy_service }}"
+    state: restarted

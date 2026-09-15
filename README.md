@@ -35,7 +35,7 @@ field-sourced-content-rhel/
 ├── roles/
 │   ├── example_setup/         # baseline on every node
 │   ├── example_httpd/         # per-node example, driven by play vars
-│   └── example_squid/         # optional bastion listeners on 8080/8443
+│   └── example_proxy/         # optional bastion listeners on 8080/8443
 ├── site.yml                   # optional Antora playbook for Showroom
 ├── ui-config.yml              # optional Showroom tabs and layout
 └── content/                   # optional Showroom (Antora) sources
@@ -71,7 +71,7 @@ field_asset:
   node_count: 3
   node_size: medium
   rhel_version: rhel9
-  install_squid: false
+  enable_bastion_proxy: false
 ```
 
 ## HTTPS through the bastion
@@ -87,7 +87,7 @@ TLS stops at the Route. Listen HTTP on those ports.
 
 When **Deploy Showroom?** is checked, Showroom occupies bastion **443** (`https://bastion-<guid>.<subdomain>`). Leave 443 alone. Port 80 is unused by this catalog.
 
-**Install proxy on bastion?** runs `example_squid` on `bastions`. It installs Squid, writes `/etc/squid/squid.conf` (listens on 8080 and 8443, denies everything else), and starts the service. Edit that file to add your `cache_peer` lines. The checkbox only does something if your playbook includes the role; this template's `playbooks/deploy.yml` does.
+**Install proxy on bastion?** runs `example_proxy` on `bastions`. It installs a proxy, writes a sample config that listens on 8080 and 8443 (and denies everything else), and starts the service. Edit that config to add your `cache_peer` lines. The checkbox only does something if your playbook includes the role; this template's `playbooks/deploy.yml` does.
 
 ## Playbook entrypoint
 
@@ -128,8 +128,8 @@ The example is four plays so you can see how targeting works:
   hosts: bastions
   become: true
   roles:
-    - example_squid
-  when: field_asset.install_squid | default(false) | bool
+    - example_proxy
+  when: field_asset.enable_bastion_proxy | default(false) | bool
 ```
 
 `hosts: nodes` is every workload VM and never the bastion. `groups['nodes'][0]` is the first node (the catalog always creates at least one). The third play's `hosts:` is the second node, or `[]` when the order has only one — Ansible then skips that play. Same role, different `example_httpd_site_role`. Do not use `hosts: nodes[1]`; a missing subscript is an error, not a skip. The proxy play runs on `bastions` when the order-form checkbox is on.

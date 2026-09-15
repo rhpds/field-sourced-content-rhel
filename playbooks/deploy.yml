@@ -42,5 +42,5 @@
   hosts: bastions
   become: true
   roles:
-    - example_squid
-  when: field_asset.install_squid | default(false) | bool
+    - example_proxy
+  when: field_asset.enable_bastion_proxy | default(false) | bool

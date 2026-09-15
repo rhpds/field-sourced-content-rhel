@@ -1,0 +1,7 @@
+---
+example_proxy_package: squid
+example_proxy_service: squid
+example_proxy_config_path: /etc/squid/squid.conf
+example_proxy_selinux_ports:
+  - 8080
+  - 8443

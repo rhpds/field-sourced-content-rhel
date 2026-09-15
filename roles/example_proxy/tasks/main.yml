@@ -1,12 +1,12 @@
 ---
-- name: Install Squid
+- name: Install the proxy package
   ansible.builtin.package:
     name:
-      - "{{ example_squid_package }}"
+      - "{{ example_proxy_package }}"
       - policycoreutils-python-utils
     state: present
 
-- name: Allow Squid to bind the catalog Route ports
+- name: Allow the proxy to bind the catalog Route ports
   ansible.builtin.command:
     argv:
       - semanage
@@ -17,7 +17,7 @@
       - -p
       - tcp
       - "{{ item | string }}"
-  loop: "{{ example_squid_selinux_ports }}"
+  loop: "{{ example_proxy_selinux_ports }}"
   register: r_semanage
   changed_when: r_semanage.rc == 0
   failed_when: >-
@@ -25,16 +25,16 @@
     and 'already defined' not in (r_semanage.stderr | default(''))
     and 'SELinux is disabled' not in (r_semanage.stderr | default(''))
 
-- name: Write Squid config
+- name: Write proxy config
   ansible.builtin.template:
-    src: squid.conf.j2
-    dest: "{{ example_squid_config_path }}"
+    src: proxy.conf.j2
+    dest: "{{ example_proxy_config_path }}"
     mode: "0644"
-  notify: Restart squid
+  notify: Restart proxy
 
-- name: Start and enable Squid
+- name: Start and enable the proxy
   ansible.builtin.service:
-    name: "{{ example_squid_service }}"
+    name: "{{ example_proxy_service }}"
     state: started
     enabled: true
 
@@ -48,7 +48,7 @@
   changed_when: false
   failed_when: false
 
-- name: Allow Squid ports through firewalld
+- name: Allow proxy ports through firewalld
   when: r_firewalld.rc == 0
   block:
     - name: Permanently add 8080 and 8443
@@ -57,15 +57,15 @@
           - firewall-cmd
           - --permanent
           - --add-port={{ item }}/tcp
-      loop: "{{ example_squid_selinux_ports }}"
-      register: r_fw_squid
-      changed_when: "'ALREADY_ENABLED' not in r_fw_squid.stdout"
-      failed_when: r_fw_squid.rc != 0 and 'ALREADY_ENABLED' not in r_fw_squid.stdout
+      loop: "{{ example_proxy_selinux_ports }}"
+      register: r_fw_proxy
+      changed_when: "'ALREADY_ENABLED' not in r_fw_proxy.stdout"
+      failed_when: r_fw_proxy.rc != 0 and 'ALREADY_ENABLED' not in r_fw_proxy.stdout
 
     - name: Reload firewalld
       ansible.builtin.command:
         argv:
           - firewall-cmd
           - --reload
-      when: r_fw_squid.results | selectattr('changed') | list | length > 0
+      when: r_fw_proxy.results | selectattr('changed') | list | length > 0
       changed_when: true
