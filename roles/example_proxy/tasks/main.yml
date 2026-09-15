@@ -19,11 +19,17 @@
       - "{{ item | string }}"
   loop: "{{ example_proxy_selinux_ports }}"
   register: r_semanage
-  changed_when: r_semanage.rc == 0
-  failed_when: >-
-    r_semanage.rc != 0
-    and 'already defined' not in (r_semanage.stderr | default(''))
-    and 'SELinux is disabled' not in (r_semanage.stderr | default(''))
+  failed_when: false
+  changed_when: r_semanage.rc | default(1) == 0
+
+- name: Fail unexpected SELinux port-label errors
+  ansible.builtin.fail:
+    msg: "{{ item.stderr }}"
+  loop: "{{ r_semanage.results }}"
+  when: >-
+    item.rc != 0
+    and 'already defined' not in (item.stderr | default(''))
+    and 'SELinux is disabled' not in (item.stderr | default(''))
 
 - name: Write proxy config
   ansible.builtin.template:
@@ -59,8 +65,16 @@
           - --add-port={{ item }}/tcp
       loop: "{{ example_proxy_selinux_ports }}"
       register: r_fw_proxy
-      changed_when: "'ALREADY_ENABLED' not in r_fw_proxy.stdout"
-      failed_when: r_fw_proxy.rc != 0 and 'ALREADY_ENABLED' not in r_fw_proxy.stdout
+      failed_when: false
+      changed_when: "'ALREADY_ENABLED' not in (r_fw_proxy.stdout | default(''))"
+
+    - name: Fail unexpected firewalld port errors
+      ansible.builtin.fail:
+        msg: "{{ item.stderr | default(item.stdout) }}"
+      loop: "{{ r_fw_proxy.results }}"
+      when: >-
+        item.rc != 0
+        and 'ALREADY_ENABLED' not in (item.stdout | default(''))
 
     - name: Reload firewalld
       ansible.builtin.command:

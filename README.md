@@ -107,7 +107,7 @@ The example is four plays so you can see how targeting works:
     - example_setup
 
 - name: HTTP site on the first workload node
-  hosts: "{{ groups['nodes'][0] }}"
+  hosts: "{{ groups['nodes'][0] if groups['nodes'] | default([]) | length > 0 else [] }}"
   become: true
   vars:
     example_httpd_site_role: primary

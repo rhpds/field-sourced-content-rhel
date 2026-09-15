@@ -9,7 +9,7 @@
 # Pattern this file shows:
 #   hosts: nodes
 #     every workload node, never the bastion
-#   hosts: "{{ groups['nodes'][0] }}"
+#   hosts: "{{ groups['nodes'][0] if groups['nodes'] | default([]) | length > 0 else [] }}"
 #     first node; the catalog always creates at least one
 #   hosts: "{{ groups['nodes'][1] if groups['nodes'] | length > 1 else [] }}"
 #     second node when the order has one; empty host list skips the play.
@@ -24,7 +24,7 @@
     - example_setup
 
 - name: HTTP site on the first workload node
-  hosts: "{{ groups['nodes'][0] }}"
+  hosts: "{{ groups['nodes'][0] if groups['nodes'] | default([]) | length > 0 else [] }}"
   become: true
   vars:
     example_httpd_site_role: primary

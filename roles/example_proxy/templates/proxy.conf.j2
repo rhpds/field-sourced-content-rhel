@@ -1,5 +1,6 @@
 # Sample bastion proxy for RHEL Field Asset.
-# Catalog Routes send HTTP here (TLS already terminated at the Route).
+# 8080 is the catalog HTTP Route; 8443 is the HTTPS Route (TLS stops at the
+# Route, this process still listens HTTP).
 #
 # This starts and listens. It does not forward anywhere until you add
 # cache_peer lines and reload the service.
