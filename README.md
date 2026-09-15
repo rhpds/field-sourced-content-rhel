@@ -83,7 +83,7 @@ Workload nodes are not given public Routes. SSH to a node is hop-through from th
 | `http://app-<guid>.<subdomain>` | **8080** (HTTP) |
 | `https://app2-<guid>.<subdomain>` | **8443** (HTTPS; TLS stops at the Route, so listen HTTP on 8443) |
 
-When **Deploy Showroom?** is checked, Showroom occupies bastion **443**. Leave 443 alone.
+When **Deploy Showroom?** is checked, Showroom is `https://bastion-<guid>.<subdomain>` (edge Route to bastion port 80). Do not bind 80.
 
 **Install proxy on bastion?** runs `example_proxy` on `bastions`. It installs a proxy, writes a sample config that listens on 8080 and 8443 (and denies everything else), and starts the service. Edit that config to add your `cache_peer` lines. The checkbox only does something if your playbook includes the role; this template's `playbooks/deploy.yml` does.
 
