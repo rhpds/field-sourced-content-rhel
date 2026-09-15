@@ -72,6 +72,19 @@ field_asset:
   rhel_version: rhel9
 ```
 
+## HTTP through the bastion
+
+Workload nodes are not given public HTTPS Routes. SSH to a node is hop-through from the bastion (`ssh <name>`). HTTP is the same idea: two reserved ports on the **bastion**, each with a public URL.
+
+| Public URL | Listen on the bastion |
+|---|---|
+| `https://app-<guid>.<subdomain>` | **8080** |
+| `https://app2-<guid>.<subdomain>` | **8443** |
+
+TLS terminates at the OpenShift Route (edge). The process on the bastion must speak **plain HTTP** on that port — do not put a TLS listener there. Proxy to a node yourself if the UI lives off-bastion.
+
+When **Deploy Showroom?** is checked, Showroom occupies bastion **443** (`https://bastion-<guid>.<subdomain>`). Leave 443 alone. Port 80 is unused by this catalog.
+
 ## Playbook entrypoint
 
 The catalog field is a path **inside the installed collection**, not a path you make up on the bastion. After `ansible-galaxy collection install git+<your-repo>`, the runner executes:
