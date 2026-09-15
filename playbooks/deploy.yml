@@ -1,5 +1,8 @@
 ---
 # Example playbook for RHEL Field Asset.
+# Name this file whatever you want; the order form "Playbook entrypoint"
+# field is how the runner finds it. This template uses playbooks/deploy.yml
+# so it is not confused with the Antora site.yml at the repo root.
 # Inventory groups `bastions` and `nodes` are written by the platform.
 # Extra vars include `guid` and `field_asset.*`.
 

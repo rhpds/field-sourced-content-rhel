@@ -11,7 +11,7 @@ OpenShift Field Sourced Content is a different catalog item and a different temp
 1. You choose node count, one node size, and RHEL 9 or 10.
 2. You may leave the git repo blank. You get VMs only.
 3. If you provide a git repo, it must be an **Ansible collection** (`galaxy.yml` at the root).
-4. The order form also asks for a **playbook entrypoint** relative to the collection root. The default is `playbooks/site.yml`.
+4. The order form asks for a **playbook entrypoint** relative to the collection root. That path can be any playbook filename you choose. This template uses `playbooks/deploy.yml` so it is not confused with Antora's `site.yml`.
 5. The platform writes inventory on the bastion, pulls an execution environment, and starts `field-content.service`.
 6. The RHDP service is successful once that container is **running**. Galaxy install and `ansible-playbook` continue in the background.
 
@@ -31,10 +31,11 @@ This repo is a collection. Copy it and keep the same shape:
 field-sourced-content-rhel/
 ├── galaxy.yml                 # required — ansible-galaxy installs this repo
 ├── playbooks/
-│   └── site.yml               # default order-form entrypoint
+│   └── deploy.yml             # example playbook (name yours whatever you want)
 ├── roles/
 │   └── example_setup/         # your roles
 ├── site.yml                   # optional Antora playbook for Showroom
+├── ui-config.yml              # optional Showroom tabs and layout
 └── content/                   # optional Showroom (Antora) sources
 ```
 
@@ -78,7 +79,7 @@ The catalog field is a path **inside the installed collection**, not a path you 
 <collection_dir>/<entrypoint>
 ```
 
-For this repository the entrypoint is `playbooks/site.yml`:
+This template's example playbook is `playbooks/deploy.yml`. On the order form, set **Playbook entrypoint** to that path — or to whatever you renamed it:
 
 ```yaml
 - name: Example field sourced content
@@ -92,7 +93,15 @@ If you add `requirements.yml` at the collection root or under `playbooks/`, the 
 
 ## Optional Showroom
 
-The same git repo can hold an Antora lab guide (`site.yml` + `content/` at the repo root, as in this template). Check **Deploy Showroom?** on the order form. If your Showroom project is not at the repo root, set **Showroom path** to that directory.
+The same git repo can hold a Showroom lab guide. At the repository root (or the directory you set as **Showroom path**) you need:
+
+- `site.yml` — Antora playbook
+- `ui-config.yml` — tabs and layout for the right-hand pane (Wetty terminal in this template)
+- `content/` — Antora sources (`antora.yml`, modules, pages)
+
+`ui-config.yml` is required by Showroom. It lives next to `site.yml`, not under `content/`. See the [Showroom UI configuration docs](https://github.com/rhpds/showroom_template_nookbag/blob/main/content/modules/ROOT/pages/ui-config.adoc).
+
+Check **Deploy Showroom?** on the order form. If that project is not at the repo root, set **Showroom path** to the directory that contains those three.
 
 Showroom is allowed to block the order (existing Showroom role behavior). The Ansible runner is not.
 
@@ -117,7 +126,7 @@ The order **does** fail if the URL is missing/malformed when you checked the rep
 Use a throwaway inventory with groups `bastions` and `nodes`. Do not point this at production hosts.
 
 ```bash
-ANSIBLE_ROLES_PATH=roles ansible-playbook -i my-inventory.ini playbooks/site.yml
+ANSIBLE_ROLES_PATH=roles ansible-playbook -i my-inventory.ini playbooks/deploy.yml
 ```
 
 ## Related
