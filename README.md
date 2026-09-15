@@ -87,7 +87,7 @@ TLS stops at the Route. Listen HTTP on those ports.
 
 When **Deploy Showroom?** is checked, Showroom occupies bastion **443** (`https://bastion-<guid>.<subdomain>`). Leave 443 alone. Port 80 is unused by this catalog.
 
-**Install Squid on bastion?** runs `example_squid` on `bastions`. It installs Squid, writes `/etc/squid/squid.conf` (listens on 8080 and 8443, denies everything else), and starts the service. Edit that file to add your `cache_peer` lines. The checkbox only does something if your playbook includes the role; this template's `playbooks/deploy.yml` does.
+**Install proxy on bastion?** runs `example_squid` on `bastions`. It installs Squid, writes `/etc/squid/squid.conf` (listens on 8080 and 8443, denies everything else), and starts the service. Edit that file to add your `cache_peer` lines. The checkbox only does something if your playbook includes the role; this template's `playbooks/deploy.yml` does.
 
 ## Playbook entrypoint
 
@@ -124,7 +124,7 @@ The example is four plays so you can see how targeting works:
   roles:
     - example_httpd
 
-- name: Sample Squid on the bastion
+- name: Sample proxy on the bastion
   hosts: bastions
   become: true
   roles:
@@ -132,7 +132,7 @@ The example is four plays so you can see how targeting works:
   when: field_asset.install_squid | default(false) | bool
 ```
 
-`hosts: nodes` is every workload VM and never the bastion. `groups['nodes'][0]` is the first node (the catalog always creates at least one). The third play's `hosts:` is the second node, or `[]` when the order has only one — Ansible then skips that play. Same role, different `example_httpd_site_role`. Do not use `hosts: nodes[1]`; a missing subscript is an error, not a skip. The Squid play runs on `bastions` when the order-form checkbox is on.
+`hosts: nodes` is every workload VM and never the bastion. `groups['nodes'][0]` is the first node (the catalog always creates at least one). The third play's `hosts:` is the second node, or `[]` when the order has only one — Ansible then skips that play. Same role, different `example_httpd_site_role`. Do not use `hosts: nodes[1]`; a missing subscript is an error, not a skip. The proxy play runs on `bastions` when the order-form checkbox is on.
 
 If you add `requirements.yml` at the collection root or under `playbooks/`, the runner installs it before the playbook.
 

@@ -38,7 +38,7 @@
   roles:
     - example_httpd
 
-- name: Sample Squid on the bastion
+- name: Sample proxy on the bastion
   hosts: bastions
   become: true
   roles:
