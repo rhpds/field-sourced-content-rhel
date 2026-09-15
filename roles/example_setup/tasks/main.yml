@@ -1,0 +1,12 @@
+---
+- name: Write an example marker file
+  ansible.builtin.copy:
+    dest: "{{ example_setup_marker_path }}"
+    mode: "0644"
+    content: "{{ example_setup_motd }}"
+
+- name: Write /etc/motd
+  ansible.builtin.copy:
+    dest: /etc/motd
+    mode: "0644"
+    content: "{{ example_setup_motd }}"

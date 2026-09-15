@@ -1,0 +1,5 @@
+---
+example_setup_marker_path: /etc/field-content-example
+example_setup_motd: |
+  This node was configured by RHEL Field Sourced Content.
+  guid={{ guid | default('unknown') }}

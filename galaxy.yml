@@ -1,0 +1,22 @@
+---
+namespace: rhpds
+name: field_sourced_content_rhel
+version: 1.0.0
+readme: README.md
+authors:
+  - Nate Stephany <nstephan@redhat.com>
+description: >
+  Example Ansible collection for RHDP RHEL Field Sourced Content.
+  Order the RHEL Field Asset catalog item and point it at this repository.
+license:
+  - MIT
+tags:
+  - rhel
+  - rhdp
+  - fieldcontent
+repository: https://github.com/rhpds/field-sourced-content-rhel
+issues: https://github.com/rhpds/field-sourced-content-rhel/issues
+build_ignore:
+  - .git
+  - .gitignore
+  - "*.retry"

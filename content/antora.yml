@@ -1,0 +1,6 @@
+---
+name: rhel-field-content
+title: RHEL Field Content
+version: ~
+nav:
+  - modules/ROOT/nav.adoc

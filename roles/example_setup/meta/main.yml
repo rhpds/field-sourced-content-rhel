@@ -1,0 +1,10 @@
+---
+galaxy_info:
+  role_name: example_setup
+  author: RHDP Content Team
+  description: Example role for RHEL Field Sourced Content
+  license: MIT
+  min_ansible_version: "2.15"
+  galaxy_tags:
+    - rhel
+    - example

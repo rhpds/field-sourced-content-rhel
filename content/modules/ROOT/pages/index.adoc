@@ -1,0 +1,11 @@
+= Example lab
+
+This Showroom guide is a stub for RHEL Field Sourced Content.
+
+The environment is a bastion plus one or more RHEL nodes.
+Your Ansible collection runs from the bastion after the order succeeds.
+
+== Inventory
+
+The platform writes groups `bastions` and `nodes`.
+SSH to the bastion and inspect `/opt/field-content/inventory`.
