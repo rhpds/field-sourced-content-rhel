@@ -18,9 +18,9 @@ OpenShift Field Sourced Content is a different catalog item and a different temp
 Watch it:
 
 ```bash
-systemctl status field-content
-journalctl -u field-content -f
-podman logs -f field-content
+sudo systemctl status field-content
+sudo journalctl -u field-content -f
+sudo podman logs -f field-content
 ```
 
 ## Repository layout
