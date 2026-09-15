@@ -1,0 +1,71 @@
+---
+- name: Install Squid
+  ansible.builtin.package:
+    name:
+      - "{{ example_squid_package }}"
+      - policycoreutils-python-utils
+    state: present
+
+- name: Allow Squid to bind the catalog Route ports
+  ansible.builtin.command:
+    argv:
+      - semanage
+      - port
+      - -a
+      - -t
+      - http_cache_port_t
+      - -p
+      - tcp
+      - "{{ item | string }}"
+  loop: "{{ example_squid_selinux_ports }}"
+  register: r_semanage
+  changed_when: r_semanage.rc == 0
+  failed_when: >-
+    r_semanage.rc != 0
+    and 'already defined' not in (r_semanage.stderr | default(''))
+    and 'SELinux is disabled' not in (r_semanage.stderr | default(''))
+
+- name: Write Squid config
+  ansible.builtin.template:
+    src: squid.conf.j2
+    dest: "{{ example_squid_config_path }}"
+    mode: "0644"
+  notify: Restart squid
+
+- name: Start and enable Squid
+  ansible.builtin.service:
+    name: "{{ example_squid_service }}"
+    state: started
+    enabled: true
+
+- name: Check whether firewalld is running
+  ansible.builtin.command:
+    argv:
+      - systemctl
+      - is-active
+      - firewalld
+  register: r_firewalld
+  changed_when: false
+  failed_when: false
+
+- name: Allow Squid ports through firewalld
+  when: r_firewalld.rc == 0
+  block:
+    - name: Permanently add 8080 and 8443
+      ansible.builtin.command:
+        argv:
+          - firewall-cmd
+          - --permanent
+          - --add-port={{ item }}/tcp
+      loop: "{{ example_squid_selinux_ports }}"
+      register: r_fw_squid
+      changed_when: "'ALREADY_ENABLED' not in r_fw_squid.stdout"
+      failed_when: r_fw_squid.rc != 0 and 'ALREADY_ENABLED' not in r_fw_squid.stdout
+
+    - name: Reload firewalld
+      ansible.builtin.command:
+        argv:
+          - firewall-cmd
+          - --reload
+      when: r_fw_squid.results | selectattr('changed') | list | length > 0
+      changed_when: true

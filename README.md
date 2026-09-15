@@ -34,7 +34,8 @@ field-sourced-content-rhel/
 │   └── deploy.yml             # example playbook (name yours whatever you want)
 ├── roles/
 │   ├── example_setup/         # baseline on every node
-│   └── example_httpd/         # per-node example, driven by play vars
+│   ├── example_httpd/         # per-node example, driven by play vars
+│   └── example_squid/         # optional bastion listeners on 8080/8443
 ├── site.yml                   # optional Antora playbook for Showroom
 ├── ui-config.yml              # optional Showroom tabs and layout
 └── content/                   # optional Showroom (Antora) sources
@@ -70,24 +71,23 @@ field_asset:
   node_count: 3
   node_size: medium
   rhel_version: rhel9
+  install_squid: false
 ```
 
 ## HTTPS through the bastion
 
 Workload nodes are not given public Routes. SSH to a node is hop-through from the bastion (`ssh <name>`). HTTPS is the same idea: two reserved ports on the **bastion**, each with a public **HTTPS** URL and the cluster certificate.
 
-```
-Browser --HTTPS--> OpenShift Route --HTTP--> bastion:8080 or :8443 [--HTTPS--> node]
-```
-
 | Public URL (HTTPS) | Listen on the bastion |
 |---|---|
-| `https://app-<guid>.<subdomain>` | **8080** (HTTP) |
-| `https://app2-<guid>.<subdomain>` | **8443** (HTTP) |
+| `https://app-<guid>.<subdomain>` | **8080** |
+| `https://app2-<guid>.<subdomain>` | **8443** |
 
-Edge termination is how you get a valid cert without running certbot on the VM. The browser already used HTTPS. If the app on a node only speaks HTTPS, the proxy on the bastion connects to it with TLS — that is separate from the listen socket the Route hits. Do not bind TLS on 8080/8443: the Route would send HTTP to an HTTPS listener and the URL would fail.
+TLS stops at the Route. Listen HTTP on those ports.
 
 When **Deploy Showroom?** is checked, Showroom occupies bastion **443** (`https://bastion-<guid>.<subdomain>`). Leave 443 alone. Port 80 is unused by this catalog.
+
+**Install Squid on bastion?** runs `example_squid` on `bastions`. It installs Squid, writes `/etc/squid/squid.conf` (listens on 8080 and 8443, denies everything else), and starts the service. Edit that file to add your `cache_peer` lines. The checkbox only does something if your playbook includes the role; this template's `playbooks/deploy.yml` does.
 
 ## Playbook entrypoint
 
@@ -99,7 +99,7 @@ The catalog field is a path **inside the installed collection**, not a path you 
 
 This template's example playbook is `playbooks/deploy.yml`. On the order form, set **Playbook entrypoint** to that path — or to whatever you renamed it.
 
-The example is three plays so you can see how targeting works:
+The example is four plays so you can see how targeting works:
 
 ```yaml
 - name: Baseline setup on every workload node
@@ -123,9 +123,16 @@ The example is three plays so you can see how targeting works:
     example_httpd_site_role: replica
   roles:
     - example_httpd
+
+- name: Sample Squid on the bastion
+  hosts: bastions
+  become: true
+  roles:
+    - example_squid
+  when: field_asset.install_squid | default(false) | bool
 ```
 
-`hosts: nodes` is every workload VM and never the bastion. `groups['nodes'][0]` is the first node (the catalog always creates at least one). The third play's `hosts:` is the second node, or `[]` when the order has only one — Ansible then skips that play. Same role, different `example_httpd_site_role`. Do not use `hosts: nodes[1]`; a missing subscript is an error, not a skip.
+`hosts: nodes` is every workload VM and never the bastion. `groups['nodes'][0]` is the first node (the catalog always creates at least one). The third play's `hosts:` is the second node, or `[]` when the order has only one — Ansible then skips that play. Same role, different `example_httpd_site_role`. Do not use `hosts: nodes[1]`; a missing subscript is an error, not a skip. The Squid play runs on `bastions` when the order-form checkbox is on.
 
 If you add `requirements.yml` at the collection root or under `playbooks/`, the runner installs it before the playbook.
 

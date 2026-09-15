@@ -37,3 +37,10 @@
     example_httpd_site_role: replica
   roles:
     - example_httpd
+
+- name: Sample Squid on the bastion
+  hosts: bastions
+  become: true
+  roles:
+    - example_squid
+  when: field_asset.install_squid | default(false) | bool

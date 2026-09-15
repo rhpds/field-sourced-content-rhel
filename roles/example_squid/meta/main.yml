@@ -1,0 +1,11 @@
+---
+galaxy_info:
+  role_name: example_squid
+  author: RHDP Content Team
+  description: Sample Squid listeners on bastion ports 8080 and 8443
+  license: MIT
+  min_ansible_version: "2.15"
+  galaxy_tags:
+    - rhel
+    - squid
+    - example

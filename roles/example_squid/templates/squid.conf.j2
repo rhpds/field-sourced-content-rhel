@@ -1,0 +1,20 @@
+# Sample Squid config for RHEL Field Asset.
+# Catalog Routes send HTTP here (TLS already terminated at the Route).
+#
+# This starts and listens. It does not forward anywhere until you add
+# cache_peer lines and reload: systemctl reload squid
+
+http_port 8080
+http_port 8443
+
+acl localhost src 127.0.0.1/32 ::1
+http_access allow localhost
+http_access deny all
+
+cache deny all
+coredump_dir /var/spool/squid
+
+# Reverse proxy example (replace ORIGIN with a node IP from inventory):
+# http_port 8080 accel defaultsite=ORIGIN
+# cache_peer ORIGIN parent 80 0 no-query originserver
+# http_access allow all
