@@ -72,16 +72,20 @@ field_asset:
   rhel_version: rhel9
 ```
 
-## HTTP through the bastion
+## HTTPS through the bastion
 
-Workload nodes are not given public HTTPS Routes. SSH to a node is hop-through from the bastion (`ssh <name>`). HTTP is the same idea: two reserved ports on the **bastion**, each with a public URL.
+Workload nodes are not given public Routes. SSH to a node is hop-through from the bastion (`ssh <name>`). HTTPS is the same idea: two reserved ports on the **bastion**, each with a public **HTTPS** URL and the cluster certificate.
 
-| Public URL | Listen on the bastion |
+```
+Browser --HTTPS--> OpenShift Route --HTTP--> bastion:8080 or :8443 [--HTTPS--> node]
+```
+
+| Public URL (HTTPS) | Listen on the bastion |
 |---|---|
-| `https://app-<guid>.<subdomain>` | **8080** |
-| `https://app2-<guid>.<subdomain>` | **8443** |
+| `https://app-<guid>.<subdomain>` | **8080** (HTTP) |
+| `https://app2-<guid>.<subdomain>` | **8443** (HTTP) |
 
-TLS terminates at the OpenShift Route (edge). The process on the bastion must speak **plain HTTP** on that port — do not put a TLS listener there. Proxy to a node yourself if the UI lives off-bastion.
+Edge termination is how you get a valid cert without running certbot on the VM. The browser already used HTTPS. If the app on a node only speaks HTTPS, the proxy on the bastion connects to it with TLS — that is separate from the listen socket the Route hits. Do not bind TLS on 8080/8443: the Route would send HTTP to an HTTPS listener and the URL would fail.
 
 When **Deploy Showroom?** is checked, Showroom occupies bastion **443** (`https://bastion-<guid>.<subdomain>`). Leave 443 alone. Port 80 is unused by this catalog.
 
