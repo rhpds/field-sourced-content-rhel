@@ -9,3 +9,5 @@ Your Ansible collection runs from the bastion after the order succeeds.
 
 The platform writes groups `bastions` and `nodes`.
 SSH to the bastion and inspect `/opt/field-content/inventory`.
+
+The example playbook baselines every node, puts an httpd *primary* site on the first node, and an httpd *replica* site on the second node when you ordered one.

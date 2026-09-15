@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ example_httpd_site_role }} — {{ inventory_hostname }}</title>
+</head>
+<body>
+  <h1>{{ example_httpd_site_role }}</h1>
+  <p>This page is served by <code>example_httpd</code> on <strong>{{ inventory_hostname }}</strong>.</p>
+  <ul>
+    <li>guid: {{ guid | default('unknown') }}</li>
+    <li>site role: {{ example_httpd_site_role }}</li>
+    <li>RHEL: {{ field_asset.rhel_version | default('unknown') }}</li>
+  </ul>
+</body>
+</html>

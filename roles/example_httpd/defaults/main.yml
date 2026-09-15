@@ -1,0 +1,6 @@
+---
+# primary on the first node, replica on the second when the order has one
+example_httpd_site_role: primary
+example_httpd_package: httpd
+example_httpd_service: httpd
+example_httpd_index_path: /var/www/html/index.html

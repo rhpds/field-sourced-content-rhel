@@ -1,13 +1,39 @@
 ---
 # Example playbook for RHEL Field Asset.
 # Name this file whatever you want; the order form "Playbook entrypoint"
-# field is how the runner finds it. This template uses playbooks/deploy.yml
-# so it is not confused with the Antora site.yml at the repo root.
+# field is how the runner finds it.
+#
 # Inventory groups `bastions` and `nodes` are written by the platform.
 # Extra vars include `guid` and `field_asset.*`.
+#
+# Pattern this file shows:
+#   hosts: nodes
+#     every workload node, never the bastion
+#   hosts: "{{ groups['nodes'][0] }}"
+#     first node; the catalog always creates at least one
+#   hosts: "{{ groups['nodes'][1] if groups['nodes'] | length > 1 else [] }}"
+#     second node when the order has one; empty host list skips the play.
+#     Do not use hosts: nodes[1] — that subscript errors when the host
+#     is missing instead of skipping.
 
-- name: Example field sourced content
+- name: Baseline setup on every workload node
   hosts: nodes
   become: true
   roles:
     - example_setup
+
+- name: HTTP site on the first workload node
+  hosts: "{{ groups['nodes'][0] }}"
+  become: true
+  vars:
+    example_httpd_site_role: primary
+  roles:
+    - example_httpd
+
+- name: HTTP site on the second workload node, when the order has one
+  hosts: "{{ groups['nodes'][1] if groups['nodes'] | length > 1 else [] }}"
+  become: true
+  vars:
+    example_httpd_site_role: replica
+  roles:
+    - example_httpd

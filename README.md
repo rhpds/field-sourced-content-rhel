@@ -33,7 +33,8 @@ field-sourced-content-rhel/
 ├── playbooks/
 │   └── deploy.yml             # example playbook (name yours whatever you want)
 ├── roles/
-│   └── example_setup/         # your roles
+│   ├── example_setup/         # baseline on every node
+│   └── example_httpd/         # per-node example, driven by play vars
 ├── site.yml                   # optional Antora playbook for Showroom
 ├── ui-config.yml              # optional Showroom tabs and layout
 └── content/                   # optional Showroom (Antora) sources
@@ -79,15 +80,35 @@ The catalog field is a path **inside the installed collection**, not a path you 
 <collection_dir>/<entrypoint>
 ```
 
-This template's example playbook is `playbooks/deploy.yml`. On the order form, set **Playbook entrypoint** to that path — or to whatever you renamed it:
+This template's example playbook is `playbooks/deploy.yml`. On the order form, set **Playbook entrypoint** to that path — or to whatever you renamed it.
+
+The example is three plays so you can see how targeting works:
 
 ```yaml
-- name: Example field sourced content
+- name: Baseline setup on every workload node
   hosts: nodes
   become: true
   roles:
     - example_setup
+
+- name: HTTP site on the first workload node
+  hosts: "{{ groups['nodes'][0] }}"
+  become: true
+  vars:
+    example_httpd_site_role: primary
+  roles:
+    - example_httpd
+
+- name: HTTP site on the second workload node, when the order has one
+  hosts: "{{ groups['nodes'][1] if groups['nodes'] | length > 1 else [] }}"
+  become: true
+  vars:
+    example_httpd_site_role: replica
+  roles:
+    - example_httpd
 ```
+
+`hosts: nodes` is every workload VM and never the bastion. `groups['nodes'][0]` is the first node (the catalog always creates at least one). The third play's `hosts:` is the second node, or `[]` when the order has only one — Ansible then skips that play. Same role, different `example_httpd_site_role`. Do not use `hosts: nodes[1]`; a missing subscript is an error, not a skip.
 
 If you add `requirements.yml` at the collection root or under `playbooks/`, the runner installs it before the playbook.
 

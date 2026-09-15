@@ -1,0 +1,49 @@
+---
+- name: Install httpd
+  ansible.builtin.package:
+    name: "{{ example_httpd_package }}"
+    state: present
+
+- name: Write the example site
+  ansible.builtin.template:
+    src: index.html.j2
+    dest: "{{ example_httpd_index_path }}"
+    mode: "0644"
+  notify: Restart httpd
+
+- name: Start and enable httpd
+  ansible.builtin.service:
+    name: "{{ example_httpd_service }}"
+    state: started
+    enabled: true
+
+- name: Check whether firewalld is running
+  ansible.builtin.command:
+    argv:
+      - systemctl
+      - is-active
+      - firewalld
+  register: r_firewalld
+  changed_when: false
+  failed_when: false
+
+- name: Allow HTTP through firewalld
+  when: r_firewalld.rc == 0
+  block:
+    - name: Permanently add the http service
+      ansible.builtin.command:
+        argv:
+          - firewall-cmd
+          - --permanent
+          - --add-service=http
+      register: r_fw_http
+      changed_when: "'ALREADY_ENABLED' not in r_fw_http.stdout"
+      failed_when: r_fw_http.rc != 0 and 'ALREADY_ENABLED' not in r_fw_http.stdout
+
+    - name: Reload firewalld
+      ansible.builtin.command:
+        argv:
+          - firewall-cmd
+          - --reload
+      when: r_fw_http.changed
+      changed_when: true
