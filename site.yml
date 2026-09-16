@@ -1,8 +1,7 @@
-runtime:
-  cache_dir: ./.cache/antora
-
+---
 site:
-  title: RHEL Field Sourced Content
+  title: Showroom Template Demo
+  url: https://github.com/rhpds/showroom_template_nookbag
   start_page: modules::index.adoc
 
 content:
@@ -12,8 +11,17 @@ content:
 
 ui:
   bundle:
-    url: https://github.com/rhpds/nookbag/releases/download/nookbag-v0.4.0/nookbag-v0.4.0.zip
+    url: https://github.com/rhpds/rhdp_showroom_theme/releases/download/latest/ui-bundle.zip
     snapshot: true
+
+antora:
+  extensions:
+    - require: '@sntke/antora-mermaid-extension'
+      mermaid_library_url: https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs
+      script_stem: header-scripts
+      mermaid_initialize_options:
+        start_on_load: true
+    - require: '@andrew-jones/antora-tabs-extension'
 
 output:
   dir: ./www
