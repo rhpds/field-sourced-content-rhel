@@ -1,21 +1,23 @@
 # RHEL Field Sourced Content
 
-Template for field-developed Ansible that runs on RHDP **RHEL Field Asset** (CNV VMs), not OpenShift.
+Template project repository for the RHDP **RHEL Field Asset** catalog item. Fork or copy this repo as a starting point for your own project.
 
-Order the catalog item, optionally point it at this repository (or a fork), and the platform provisions a bastion plus N RHEL nodes. If you attached a git repo, the bastion starts your collection in a Podman execution environment and **does not wait for the playbook to succeed**. Broken automation is yours to debug.
+A project repo is a mono-repo: Ansible automation (structured as a collection) and optionally Showroom lab content, all in one place. Order the catalog item, point it at your repo, and the platform provisions a bastion plus RHEL nodes. The bastion runs your playbook in a Podman execution environment and **does not wait for it to succeed** -- broken automation is yours to debug.
 
-OpenShift Field Sourced Content is a different catalog item and a different template (`field-sourced-content-template`). This repository is the RHEL equivalent.
+> For OpenShift-based field content, see `field-sourced-content-template`.
 
 ## How an order works
 
-1. You choose node count, one node size, and RHEL 9 or 10.
-2. You may leave the git repo blank. You get VMs only.
-3. If you provide a git repo, it must be an **Ansible collection** (`galaxy.yml` at the root).
-4. The order form asks for a **playbook entrypoint** relative to the collection root. That path can be any playbook filename you choose. This template uses `playbooks/deploy.yml` so it is not confused with Antora's `site.yml`.
-5. The platform writes inventory on the bastion, pulls an execution environment, and starts `field-content.service`.
-6. The RHDP service is successful once that container is **running**. Galaxy install and `ansible-playbook` continue in the background.
+1. Choose node count (1--10), node size (small/medium/large), and RHEL version (9 or 10).
+2. Leave **Existing content repo?** unchecked if you only need VMs.
+3. To run automation, check it and provide:
+   - Your project repo URL (must contain `galaxy.yml` at the root)
+   - Git revision (branch, tag, or commit)
+   - **Playbook entrypoint** -- path to your playbook inside the collection (this template uses `playbooks/deploy.yml`)
+4. The platform writes inventory on the bastion, pulls the execution environment, and starts `field-content.service`.
+5. The RHDP order succeeds once the container is **running**. Galaxy install and `ansible-playbook` continue in the background.
 
-Watch it:
+Watch progress:
 
 ```bash
 sudo systemctl status field-content
@@ -25,27 +27,26 @@ sudo podman logs -f field-content
 
 ## Repository layout
 
-This repo is a collection. Copy it and keep the same shape:
-
 ```
-field-sourced-content-rhel/
-├── galaxy.yml                 # required — ansible-galaxy installs this repo
+your-project/
+├── galaxy.yml                 # required -- makes this an installable collection
 ├── playbooks/
-│   └── deploy.yml             # example playbook (name yours whatever you want)
+│   └── deploy.yml             # your playbook (name it whatever you want)
 ├── roles/
 │   ├── example_setup/         # baseline on every node
-│   ├── example_httpd/         # per-node example, driven by play vars
-│   └── example_proxy/         # optional bastion listeners on 8080/8443
+│   ├── example_httpd/         # per-node web server example
+│   └── example_proxy/         # optional bastion proxy on 8080/8443
+├── requirements.yml           # optional -- extra collections installed at runtime
 ├── site.yml                   # optional Antora playbook for Showroom
-├── ui-config.yml              # optional Showroom tabs and layout
+├── ui-config.yml              # optional Showroom UI config
 └── content/                   # optional Showroom (Antora) sources
 ```
 
-Do not invent a stub file listing roles. Write a playbook. The playbook is how Ansible composes roles.
+If you add `requirements.yml` at the collection root or under `playbooks/`, the runner installs those collections before running your playbook.
 
-## Inventory the platform writes
+## Inventory
 
-On the bastion, `/opt/field-content/inventory`:
+The platform writes `/opt/field-content/inventory` on the bastion:
 
 ```ini
 [bastions]
@@ -61,119 +62,57 @@ ansible_ssh_private_key_file=/ssh/id_rsa
 ansible_become=true
 ```
 
-Target `nodes` for workload, `bastions` only if you mean to change the control node.
-
-Platform extra-vars (always injected; you can ignore them):
-
-```yaml
-guid: <guid>
-field_asset:
-  node_count: 3
-  node_size: medium
-  rhel_version: rhel9
-  enable_bastion_proxy: false
-```
-
-## Through the bastion
-
-Workload nodes are not given public Routes. SSH to a node is hop-through from the bastion (`ssh <name>`). HTTP and HTTPS are the same idea: two reserved ports on the **bastion**.
-
-| Public URL | Listen on the bastion |
-|---|---|
-| `http://app-<guid>.<subdomain>` | **8080** (HTTP) |
-| `https://app2-<guid>.<subdomain>` | **8443** (HTTPS; TLS stops at the Route, so listen HTTP on 8443) |
-
-When **Deploy Showroom?** is checked, Showroom is `https://bastion-<guid>.<subdomain>` (edge Route to bastion port 80). Do not bind 80.
-
-**Install proxy on bastion?** runs `example_proxy` on `bastions`. It installs a proxy, writes a sample config that listens on 8080 and 8443 (and denies everything else), and starts the service. Edit that config to add your `cache_peer` lines. The checkbox only does something if your playbook includes the role; this template's `playbooks/deploy.yml` does.
+Target `nodes` for workload. Platform extra-vars are injected automatically (`guid`, `field_asset.node_count`, `field_asset.node_size`, etc.).
 
 ## Playbook entrypoint
 
-The catalog field is a path **inside the installed collection**, not a path you make up on the bastion. After `ansible-galaxy collection install git+<your-repo>`, the runner executes:
+The order form field is a path **inside the installed collection**, not a filesystem path on the bastion. This template uses `playbooks/deploy.yml`. Key patterns in the example:
 
-```text
-<collection_dir>/<entrypoint>
-```
+- `hosts: nodes` -- every workload node, never the bastion
+- `groups['nodes'][0]` -- first node only (always exists)
+- `groups['nodes'][1] if groups['nodes'] | length > 1 else []` -- second node, or skip the play
+- Empty host list `[]` skips a play cleanly. Do not use `when:` on a Play -- it is not a valid play keyword.
 
-This template's example playbook is `playbooks/deploy.yml`. On the order form, set **Playbook entrypoint** to that path — or to whatever you renamed it.
+## Through the bastion
 
-The example is four plays so you can see how targeting works:
+Workload nodes have no public routes. Two reserved ports on the bastion provide external access:
 
-```yaml
-- name: Baseline setup on every workload node
-  hosts: nodes
-  become: true
-  roles:
-    - example_setup
+| Public URL | Bastion port |
+|---|---|
+| `http://app-<guid>.<subdomain>` | **8080** (HTTP) |
+| `https://app2-<guid>.<subdomain>` | **8443** (HTTPS edge; listen HTTP on 8443) |
 
-- name: HTTP site on the first workload node
-  hosts: "{{ groups['nodes'][0] if groups['nodes'] | default([]) | length > 0 else [] }}"
-  become: true
-  vars:
-    example_httpd_site_role: primary
-  roles:
-    - example_httpd
+### Bastion proxy
 
-- name: HTTP site on the second workload node, when the order has one
-  hosts: "{{ groups['nodes'][1] if groups['nodes'] | length > 1 else [] }}"
-  become: true
-  vars:
-    example_httpd_site_role: replica
-  roles:
-    - example_httpd
+Ports 8080 and 8443 are always routed to the bastion — you can listen on them however you like from your own playbook.
 
-- name: Sample proxy on the bastion
-  hosts: "{{ groups['bastions'] if (field_asset.enable_bastion_proxy | default(false) | bool) else [] }}"
-  become: true
-  roles:
-    - example_proxy
-```
+Check **Install proxy on bastion?** on the order form for a quick-start option: it runs the template's `example_proxy` role, which installs Squid on those ports. This is just a convenience — you are free to set up your own listeners instead.
 
-`hosts: nodes` is every workload VM and never the bastion. `groups['nodes'][0]` is the first node (the catalog always creates at least one). The third play's `hosts:` is the second node, or `[]` when the order has only one — Ansible then skips that play. Same role, different `example_httpd_site_role`. Do not use `hosts: nodes[1]`; a missing subscript is an error, not a skip. The proxy play uses the same empty-list skip when **Install proxy on bastion?** is off. `when:` is not valid on a Play.
+### Showroom
 
-If you add `requirements.yml` at the collection root or under `playbooks/`, the runner installs it before the playbook.
+Check **Deploy Showroom?** to build a lab guide from the same repo. Showroom serves at `https://bastion-<guid>.<subdomain>` (port 80). Do not bind port 80.
 
-## Optional Showroom
+At the repo root (or the directory set as **Showroom path**), provide `site.yml`, `ui-config.yml`, and `content/`. See the [Showroom UI docs](https://github.com/rhpds/showroom_template_nookbag/blob/main/content/modules/ROOT/pages/ui-config.adoc).
 
-The same git repo can hold a Showroom lab guide. At the repository root (or the directory you set as **Showroom path**) you need:
-
-- `site.yml` — Antora playbook
-- `ui-config.yml` — tabs and layout for the right-hand pane (Wetty terminal in this template)
-- `content/` — Antora sources (`antora.yml`, modules, pages)
-
-`ui-config.yml` is required by Showroom. It lives next to `site.yml`, not under `content/`. See the [Showroom UI configuration docs](https://github.com/rhpds/showroom_template_nookbag/blob/main/content/modules/ROOT/pages/ui-config.adoc).
-
-Check **Deploy Showroom?** on the order form. If that project is not at the repo root, set **Showroom path** to the directory that contains those three.
-
-Showroom is allowed to block the order (existing Showroom role behavior). The Ansible runner is not.
+Showroom can block the order. The Ansible runner cannot.
 
 ## Private repositories
 
-Check **Private git repo?** and paste a token with read access. The runner rewrites the URL as `https://x-access-token:<token>@...` inside the already-started job.
+Check **Private git repo?** and paste a token with read access.
 
 ## What will not fail the RHDP order
 
-Once the container is running, these are your problem, not the platform's:
+Once the container is running, these are yours to debug:
 
 - Repository does not exist or token is wrong
 - Repo is not a valid collection
 - Playbook path is wrong
 - Playbook syntax or task failures
-- Hosts unreachable from a bad `hosts:` line
 
-The order **does** fail if the URL is missing/malformed when you checked the repo box, the EE image cannot be pulled, inventory cannot be written, or the container never reaches Running.
+The order **does** fail if the repo URL is missing, the EE cannot be pulled, or the container never reaches Running.
 
-## Local check
-
-Use a throwaway inventory with groups `bastions` and `nodes`. Do not point this at production hosts.
+## Local testing
 
 ```bash
 ANSIBLE_ROLES_PATH=roles ansible-playbook -i my-inventory.ini playbooks/deploy.yml
 ```
-
-## Related
-
-- Catalog item (devs): `agd_v2/rhel-field-asset-cnv` in AgnosticV
-- Runner role: `agnosticd.cloud_vm_workloads.vm_workload_field_content`
-- OpenShift sibling: https://github.com/rhpds/field-sourced-content-template
-- Design notes: https://gist.github.com/stencell/9cb5315693aeda56066af9c72bc7b287
