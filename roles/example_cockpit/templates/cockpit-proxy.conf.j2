@@ -1,6 +1,6 @@
 {% for node in groups['nodes'] | default([]) %}
 location /{{ node }}/ {
-    proxy_pass http://{{ hostvars[node]['ansible_host'] }}:{{ example_cockpit_port }}/{{ node }}/;
+    proxy_pass https://{{ hostvars[node]['ansible_host'] }}:{{ example_cockpit_port }}/{{ node }}/;
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection $connection_upgrade;

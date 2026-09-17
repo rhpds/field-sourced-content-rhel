@@ -1,6 +1,4 @@
 ---
-# Runs on nodes — installs Cockpit and configures it for reverse proxy access.
-
 - name: Install Cockpit packages
   ansible.builtin.package:
     name: "{{ example_cockpit_packages }}"
@@ -24,3 +22,24 @@
     name: cockpit.socket
     state: started
     enabled: true
+
+- name: Configure bastion reverse proxy for Cockpit
+  when: field_asset.enable_bastion_proxy | default(false) | bool
+  delegate_to: "{{ groups['bastions'][0] }}"
+  run_once: true
+  block:
+    - name: Write Cockpit reverse proxy locations
+      ansible.builtin.template:
+        src: cockpit-proxy.conf.j2
+        dest: /etc/nginx/proxy.d/cockpit.conf
+        mode: "0644"
+
+    - name: Write landing page with Cockpit links
+      ansible.builtin.template:
+        src: index.html.j2
+        dest: /usr/share/nginx/html/index.html
+        mode: "0644"
+
+    - name: Reload nginx
+      ansible.builtin.command: nginx -s reload
+      changed_when: true

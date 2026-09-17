@@ -44,12 +44,3 @@
   become: true
   roles:
     - example_cockpit
-
-- name: Configure bastion proxy for Cockpit
-  hosts: "{{ groups['bastions'] if (field_asset.enable_bastion_proxy | default(false) | bool) else [] }}"
-  become: true
-  tasks:
-    - name: Configure Nginx reverse proxy for Cockpit
-      ansible.builtin.include_role:
-        name: example_cockpit
-        tasks_from: proxy
