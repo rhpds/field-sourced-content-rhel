@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Bastion Proxy — {{ guid }}</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; }
+    a { display: block; padding: 12px; margin: 8px 0; background: #e7f5ff; text-decoration: none; border-radius: 4px; }
+    a:hover { background: #d0ebff; }
+  </style>
+</head>
+<body>
+  <h1>Cockpit Consoles</h1>
+{% for node in groups['nodes'] | default([]) %}
+  <a href="/{{ node }}/">{{ node }}</a>
+{% endfor %}
+</body>
+</html>

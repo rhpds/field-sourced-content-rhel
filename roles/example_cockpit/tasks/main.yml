@@ -1,0 +1,26 @@
+---
+# Runs on nodes — installs Cockpit and configures it for reverse proxy access.
+
+- name: Install Cockpit packages
+  ansible.builtin.package:
+    name: "{{ example_cockpit_packages }}"
+    state: present
+
+- name: Ensure cockpit config directory exists
+  ansible.builtin.file:
+    path: /etc/cockpit
+    state: directory
+    mode: "0755"
+
+- name: Configure Cockpit for reverse proxy access
+  ansible.builtin.template:
+    src: cockpit.conf.j2
+    dest: /etc/cockpit/cockpit.conf
+    mode: "0644"
+  notify: Restart cockpit
+
+- name: Start and enable cockpit.socket
+  ansible.builtin.service:
+    name: cockpit.socket
+    state: started
+    enabled: true

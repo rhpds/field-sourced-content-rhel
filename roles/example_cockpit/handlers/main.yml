@@ -1,0 +1,9 @@
+---
+- name: Restart cockpit
+  ansible.builtin.service:
+    name: cockpit.socket
+    state: restarted
+
+- name: Reload nginx
+  ansible.builtin.command: nginx -s reload
+  changed_when: true

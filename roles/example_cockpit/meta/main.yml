@@ -1,0 +1,8 @@
+---
+galaxy_info:
+  role_name: example_cockpit
+  description: >-
+    Install Cockpit on workload nodes and configure the bastion
+    reverse proxy to reach each node's console.
+  min_ansible_version: "2.15"
+dependencies: []
