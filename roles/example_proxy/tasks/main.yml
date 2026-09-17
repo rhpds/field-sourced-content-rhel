@@ -30,6 +30,7 @@
     item.rc != 0
     and 'already defined' not in (item.stderr | default(''))
     and 'SELinux is disabled' not in (item.stderr | default(''))
+    and 'SELinux policy is not managed' not in (item.stderr | default(''))
 
 - name: Write proxy config
   ansible.builtin.template:
