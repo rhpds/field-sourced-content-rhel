@@ -35,7 +35,7 @@ your-project/
 ├── roles/
 │   ├── example_setup/         # baseline on every node
 │   ├── example_httpd/         # per-node web server example
-│   └── example_proxy/         # optional bastion proxy on 8080/8443
+│   └── example_cockpit/       # Cockpit on nodes + bastion proxy config
 ├── requirements.yml           # optional -- extra collections installed at runtime
 ├── site.yml                   # optional Antora playbook for Showroom
 ├── ui-config.yml              # optional Showroom UI config
@@ -50,7 +50,7 @@ The platform writes `/opt/field-content/inventory` on the bastion:
 
 ```ini
 [bastions]
-bastion ansible_host=...
+bastion ansible_host=127.0.0.1
 
 [nodes]
 node1 ansible_host=...
@@ -62,7 +62,23 @@ ansible_ssh_private_key_file=/ssh/id_rsa
 ansible_become=true
 ```
 
-Target `nodes` for workload. Platform extra-vars are injected automatically (`guid`, `field_asset.node_count`, `field_asset.node_size`, etc.).
+Bastions connect via SSH to 127.0.0.1 (the EE container runs with `--network=host`). This lets your playbook manage services on the bastion with `ansible.builtin.service` and other modules that need a real init system.
+
+Target `nodes` for workload. Platform extra-vars are injected automatically (`guid`, `subdomain`, `field_asset.*`).
+
+## Extra-vars
+
+```yaml
+guid: "<guid>"
+subdomain: "<apps domain>"
+field_asset:
+  node_count: <int>
+  node_size: "<small|medium|large>"
+  rhel_version: "<rhel9|rhel10>"
+  enable_bastion_proxy: <bool>
+  route_app: "app-<guid>.<subdomain>"
+  route_app_secure: "app-secure-<guid>.<subdomain>"
+```
 
 ## Playbook entrypoint
 
@@ -80,13 +96,21 @@ Workload nodes have no public routes. Two reserved ports on the bastion provide 
 | Public URL | Bastion port |
 |---|---|
 | `http://app-<guid>.<subdomain>` | **8080** (HTTP) |
-| `https://app2-<guid>.<subdomain>` | **8443** (HTTPS edge; listen HTTP on 8443) |
+| `https://app-secure-<guid>.<subdomain>` | **8443** (HTTPS edge; listen HTTP on 8443) |
 
 ### Bastion proxy
 
-Ports 8080 and 8443 are always routed to the bastion — you can listen on them however you like from your own playbook.
+Check **Install proxy on bastion?** on the order form and the platform installs Nginx as a reverse proxy on ports 8080 and 8443. The Nginx server block includes `/etc/nginx/proxy.d/*.conf` — an empty directory where your playbook drops location configs for the services you install on the nodes.
 
-Check **Install proxy on bastion?** on the order form for a quick-start option: it runs the template's `example_proxy` role, which installs Squid on those ports. This is just a convenience — you are free to set up your own listeners instead.
+This template demonstrates the pattern with the `example_cockpit` role:
+
+1. Installs Cockpit on all nodes with a per-node `UrlRoot`
+2. Delegates to the bastion to write an Nginx location config into `proxy.d/`
+3. Reloads Nginx
+
+The result: `https://app-secure-<guid>.<subdomain>/node1/` proxies to Cockpit on node1, `/node2/` to node2, and so on. Use this as a pattern for routing to any service on any port.
+
+If you do not check the proxy box, the ports are still routed — you can listen on them however you like from your own playbook.
 
 ### Showroom
 
@@ -95,6 +119,12 @@ Check **Deploy Showroom?** to build a lab guide from the same repo. Showroom ser
 At the repo root (or the directory set as **Showroom path**), provide `site.yml`, `ui-config.yml`, and `content/`. See the [Showroom UI docs](https://github.com/rhpds/showroom_template_nookbag/blob/main/content/modules/ROOT/pages/ui-config.adoc).
 
 Showroom can block the order. The Ansible runner cannot.
+
+## Credentials
+
+The platform creates `lab-user` with a password on the bastion and all workload nodes. These credentials work for SSH, Cockpit, and sudo. The password is shown on the RHDP order page.
+
+SSH between hosts is preconfigured — from the bastion, just `ssh <node-name>`.
 
 ## Private repositories
 
