@@ -25,6 +25,23 @@ sudo journalctl -u field-content -f
 sudo podman logs -f field-content
 ```
 
+### If the playbook fails
+
+The RHDP order already succeeded — broken automation is yours to fix. Push your fix to the repo, then restart the service. It re-clones from scratch and reruns the playbook:
+
+```bash
+sudo systemctl restart field-content
+sudo journalctl -u field-content -f   # watch the retry
+```
+
+The revision used at provision time is stored in `/opt/field-content/env`. If you pinned to a specific commit or tag on the order form, update `GIT_REVISION` in that file before restarting to pull a newer ref. If you set the revision to a branch (e.g. `main`), restarting always pulls the latest commit on that branch — no file editing needed.
+
+You can also run the script directly if you want output inline rather than through journald:
+
+```bash
+sudo /opt/field-content/run.sh
+```
+
 ## Repository layout
 
 ```
